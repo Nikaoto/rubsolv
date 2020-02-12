@@ -1,0 +1,4 @@
+rubsolv todo
+
+Things to try
+- set GENE_SIZE to 3 (which removes junk genes) 
