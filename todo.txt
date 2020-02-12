@@ -1,4 +1,9 @@
 rubsolv todo
 
 Things to try
-- set GENE_SIZE to 3 (which removes junk genes) 
+- add 4 more genes: front left-right (2) and back left-right (2, which makes 4)
+- Try Genitor-style immediate repopulation
+- Try Genitor-style fitness ranking
+- Try intermediate generation (u + lambda)ES
+- Try remainder stohastic sampling
+- Try average fitness assignment: fitness = f_i/f_avg

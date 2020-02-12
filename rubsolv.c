@@ -8,6 +8,7 @@
 #include "colors.h"
 
 #define CUBE_SIZE         3
+#define CELL_COUNT        CUBE_SIZE * CUBE_SIZE
 #define SIDE_COUNT        6
 #define GENE_SIZE         3
 #define CHROMO_LENGTH     50
@@ -16,11 +17,11 @@
 #define CELL_STR          "  "
 #define COLOR_CELLS       1
 #define SOLUTION_REWARD   100000
-#define MUTATION_RATE     0.01f * GENE_SIZE
+#define MUTATION_RATE     0.005f * GENE_SIZE
 #define CROSSOVER_RATE    0.4f
 #define REWARD_ACTION     +
 #define REWARD_MULT       1
-#define DRAW_EVERY        100
+#define DRAW_EVERY        200
 #define RAND_END          (int) ((RAND_MAX / n) * n)
 
 // Regions
@@ -35,14 +36,18 @@ int REV_WEST_REGION[]  = {6, 3, 0};
 
 // Genes / actions
 enum GENE_TYPE {
-    NORTH_LEFT,     // 000 Rotate top side clockwise
-    NORTH_RIGHT,    // 001 Rotate top side counter-clockwise
-    EAST_UP,        // 010 Rotate right side upwards
-    EAST_DOWN,      // 011 Rotate right side downwards
-    SOUTH_LEFT,     // 100 Rotate bottom side clockwise
-    SOUTH_RIGHT,    // 101 Rotate bottom side counter-clockwise
-    WEST_UP,        // 110 Rotate left side upwards
-    WEST_DOWN,      // 111 Rotate left side downwards
+    NORTH_LEFT,     // 0000 Rotate top side clockwise
+    NORTH_RIGHT,    // 0001 Rotate top side counter-clockwise
+    EAST_UP,        // 0010 Rotate right side upwards
+    EAST_DOWN,      // 0011 Rotate right side downwards
+    SOUTH_LEFT,     // 0100 Rotate bottom side clockwise
+    SOUTH_RIGHT,    // 0101 Rotate bottom side counter-clockwise
+    WEST_UP,        // 0110 Rotate left side upwards
+    WEST_DOWN,      // 0111 Rotate left side downwards
+    /* FRONT_LEFT,     // 1000 Rotate front side counter-clockwise */
+    /* FRONT_RIGHT,    // 1001 Rotate front side clockwise */
+    /* BACK_LEFT,      // 1010 Rotate back side counter-clockwise */
+    /* BACK_RIGHT,     // 1011 Rotate back side clockwise */
 };
 
 // Returns unbiased random integer in range [0, n)
@@ -127,7 +132,6 @@ void mutate(char chromo[])
     }
 }
 
-const size_t CELL_COUNT = CUBE_SIZE * CUBE_SIZE;
 char sides[SIDE_COUNT][CELL_COUNT] = {
     // Side 0
     { 'w', 'w', 'w',
@@ -236,12 +240,11 @@ void draw_cube(char sides[SIDE_COUNT][CELL_COUNT]) {
     }
 
     // Draw each of the sides 1, 0, 4 and 5 row by row
-    const size_t side_count = SIDE_COUNT - 2;
-    size_t side_i[side_count] = {1, 0, 4, 5};
+    size_t side_i[SIDE_COUNT - 2] = {1, 0, 4, 5};
     for (size_t j = 0; j < CUBE_SIZE; j++) {
-        for (size_t x = 0; x < side_count; x++) {
+        for (size_t x = 0; x < SIDE_COUNT-2; x++) {
             for (size_t i = 0; i < CUBE_SIZE; i++) {
-                print_cell(sides[side_i[x]][x / side_count + i + j * CUBE_SIZE]);
+                print_cell(sides[side_i[x]][x / (SIDE_COUNT-2) + i + j * CUBE_SIZE]);
             }
         }
         printf("\n");
@@ -443,6 +446,10 @@ int apply_action(char gene, char sides[][CELL_COUNT])
     case EAST_DOWN:   east_down(sides); break;
     case WEST_UP:     west_up(sides); break;
     case WEST_DOWN:   west_down(sides); break;
+    /* case FRONT_LEFT:  front_left(sides); break; */
+    /* case FRONT_RIGHT: front_right(sides); break; */
+    /* case BACK_LEFT:   back_lefft(sides); break; */
+    /* case BACK_RIGHT:  back_right(sides); break; */
     default: return 0;
     }
 
@@ -450,18 +457,25 @@ int apply_action(char gene, char sides[][CELL_COUNT])
 }
 
 // TODO not portable across different solved_sides
-char color_table[256];
-char opposites[SIDE_COUNT] = {5, 4, 3, 2, 1, 0};
+//char color_table[256];
+//char opposites[SIDE_COUNT] = {5, 4, 3, 2, 1, 0};
 
 int get_similarity_score(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
 {
     int score = 1;
     for (int s = 0; s < SIDE_COUNT; s++) {
+        int cross = 0;
         for (int k = 0; k < CELL_COUNT; k++) {
             if (k != 4 && sides1[s][k] == sides2[s][k]) {
                 score = score REWARD_ACTION REWARD_MULT;
-                if (k % 2 == 1) score += REWARD_ACTION REWARD_MULT;
+                if (k % 2 == 1) {
+                    cross += 1;
+                    score += cross;
+                }
             }
+        }
+        if (cross > 3) {
+            score += 10;
         }
     }
     return score;
@@ -477,7 +491,6 @@ int calculate_fitness(char chromo[], char sides[][CELL_COUNT],
         if (applied && are_sides_same(tmp_sides, solved_sides))
             return SOLUTION_REWARD;
     }
-
     return get_similarity_score(tmp_sides, solved_sides);
 }
 
@@ -504,14 +517,6 @@ int fitnesses[POPULATION_SIZE];
 int main(void)
 {
     srand(time(NULL));
-
-    color_table['w'] = 0;
-    color_table['b'] = 1;
-    color_table['r'] = 2;
-    color_table['o'] = 3;
-    color_table['g'] = 4;
-    color_table['y'] = 5;
-
     printf("Current sides:\n");
     draw_cube(sides);
     printf("\nDesired sides:\n");
