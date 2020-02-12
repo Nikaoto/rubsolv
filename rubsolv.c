@@ -11,16 +11,16 @@
 #define SIDE_COUNT        6
 #define GENE_SIZE         3
 #define CHROMO_LENGTH     50
-#define MAX_GENERATIONS   50000
-#define POPULATION_SIZE   1000
+#define MAX_GENERATIONS   10000
+#define POPULATION_SIZE   1500
 #define CELL_STR          "  "
 #define COLOR_CELLS       1
 #define SOLUTION_REWARD   100000
-#define MUTATION_RATE     0.005f * GENE_SIZE
-#define CROSSOVER_RATE    0.3f
+#define MUTATION_RATE     0.01f * GENE_SIZE
+#define CROSSOVER_RATE    0.4f
 #define REWARD_ACTION     +
 #define REWARD_MULT       1
-#define DRAW_EVERY        10000
+#define DRAW_EVERY        100
 #define RAND_END          (int) ((RAND_MAX / n) * n)
 
 // Regions
@@ -460,6 +460,7 @@ int get_similarity_score(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
         for (int k = 0; k < CELL_COUNT; k++) {
             if (k != 4 && sides1[s][k] == sides2[s][k]) {
                 score = score REWARD_ACTION REWARD_MULT;
+                if (k % 2 == 1) score += REWARD_ACTION REWARD_MULT;
             }
         }
     }
@@ -553,43 +554,43 @@ int main(void)
                 superfit_score = fitnesses[fittest_i];
                 copy_chromo(superfit, population[fittest_i]);
             }
-
-            // Draw resulting cube of the fittest chromosome
-            if (generation_count % DRAW_EVERY == 0) {
-                copy_all_sides(sides_buf, sides);
-                for (int i = 0; i < CHROMO_LENGTH; i++)
-                    apply_action(population[fittest_i][i], sides_buf);
-                printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
-                draw_cube(sides_buf);
-            }
-
-            // Select, crossover, and mutate
-            for (int j = 0; j < POPULATION_SIZE; j += 2) {
-                // Select 2 parents
-                int parent1_i = roulette(fitnesses, total_fitness);
-                int parent2_i = roulette(fitnesses, total_fitness);
-
-                // Crossover (family consists of 2 parents and 2 children)
-                crossover(
-                    population[parent1_i],
-                    population[parent2_i],
-                    children[j],
-                    children[j + 1]);
-
-                // Mutate
-                mutate(children[j]);
-                mutate(children[j + 1]);
-            }
-
-            // Replace population with children
-            for (int i = 0; i < POPULATION_SIZE; i++) {
-                copy_chromo(population[i], children[i]);
-            }
-
-            total_fitness = 0;
-            fittest_i = 0;
-            generation_count += 1;
         }
+
+        // Draw resulting cube of the fittest chromosome
+        if (generation_count % DRAW_EVERY == 0) {
+            copy_all_sides(sides_buf, sides);
+            for (int i = 0; i < CHROMO_LENGTH; i++)
+                apply_action(population[fittest_i][i], sides_buf);
+            printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
+            draw_cube(sides_buf);
+        }
+
+        // Select, crossover, and mutate
+        for (int i = 0; i < POPULATION_SIZE; i += 2) {
+            // Select 2 parents
+            int parent1_i = roulette(fitnesses, total_fitness);
+            int parent2_i = roulette(fitnesses, total_fitness);
+
+            // Crossover (family consists of 2 parents and 2 children)
+            crossover(
+                population[parent1_i],
+                population[parent2_i],
+                children[i],
+                children[i + 1]);
+
+            // Mutate
+            mutate(children[i]);
+            mutate(children[i + 1]);
+        }
+
+        // Replace population with children
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            copy_chromo(population[i], children[i]);
+        }
+
+        total_fitness = 0;
+        fittest_i = 0;
+        generation_count += 1;
     }
 
     if (solution_found) {
