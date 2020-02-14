@@ -3,7 +3,12 @@ Genetic algorithm I wrote for fun and practice. This is the closest it got to so
 
 ![It tried its best](best-try.png)
 
-This was obtained with the current configuration in `config.h`. Feel free to toy around with the numbers and if you get a better result, tell me.
+This was obtained with the current configuration in `config.h` with the following differences:
+```
+#define IMMEDIATE_REPOP 1
+#define CHROMO_LENGTH   22
+```
+Feel free to toy around with the numbers and if you get a better result, tell me.
 
 ## Running
 ```

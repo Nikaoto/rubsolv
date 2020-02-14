@@ -18,7 +18,7 @@
 #define SAMPLING_TYPE     ROULETTE
 #define MUTATE            1
 #define CROSSOVER         1
-#define IMMEDIATE_REPOP   1
+#define IMMEDIATE_REPOP   0
 #define CROSS_BONUS       0
 #define CHROMO_LENGTH     20
 #define MAX_GENERATIONS   10000
