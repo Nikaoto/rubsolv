@@ -8,11 +8,11 @@
 #include "config.h"
 #include "colors.h"
 
-#define char unsigned char
+typedef unsigned char uchar;
 
 // sides.h
-char sides[SIDE_COUNT][CELL_COUNT];
-char solved_sides[SIDE_COUNT][CELL_COUNT];
+uchar sides[SIDE_COUNT][CELL_COUNT];
+uchar solved_sides[SIDE_COUNT][CELL_COUNT];
 //
 
 // Regions
@@ -62,26 +62,26 @@ float randscale()
     return (float) r / RAND_MAX;
 }
 
-char get_random_gene()
+uchar get_random_gene()
 {
     return randint(1 << GENE_SIZE);
 }
 
-void random_chromo(char chromo[])
+void random_chromo(uchar chromo[])
 {
     for (size_t i = 0; i < CHROMO_LENGTH; i++) {
         chromo[i] = get_random_gene();
     }
 }
 
-void copy_chromo(char to[], char from[])
+void copy_chromo(uchar to[], uchar from[])
 {
     for (int i = 0; i < CHROMO_LENGTH; i++) {
         to[i] = from[i];
     }
 }
 
-void print_chromo(char chromo[])
+void print_chromo(uchar chromo[])
 {
     size_t i = 0;
     while (i < CHROMO_LENGTH - 1) {
@@ -90,7 +90,7 @@ void print_chromo(char chromo[])
     printf("%x", chromo[i]);
 }
 
-void crossover(char parent1[], char parent2[], char child1[], char child2[])
+void crossover(uchar parent1[], uchar parent2[], uchar child1[], uchar child2[])
 {
     if (randscale() > CROSSOVER_RATE) {
         return;
@@ -111,7 +111,7 @@ void crossover(char parent1[], char parent2[], char child1[], char child2[])
     }
 }
 
-void mutate(char chromo[])
+void mutate(uchar chromo[])
 {
     for (int i = 0; i < CHROMO_LENGTH; i++) {
         if (randscale() > MUTATION_RATE) {
@@ -119,8 +119,8 @@ void mutate(char chromo[])
         }
 
         // Flip nth bit in gene
-        char n = randint(GENE_SIZE);
-        char mask = 1 << n;
+        uchar n = randint(GENE_SIZE);
+        uchar mask = 1 << n;
         chromo[i] = (~chromo[i] & mask) | (chromo[i] & ~mask);
     }
 }
@@ -139,7 +139,7 @@ void mutate(char chromo[])
 
 */
 
-void print_cell(char cell)
+void print_cell(uchar cell)
 {
     if (COLOR_CELLS) {
         switch(cell) {
@@ -156,7 +156,7 @@ void print_cell(char cell)
     }
 }
 
-void draw_cube(char sides[SIDE_COUNT][CELL_COUNT]) {
+void draw_cube(uchar sides[SIDE_COUNT][CELL_COUNT]) {
     // Draw side 2
     for (size_t x = 0; x < CUBE_SIZE; x++) {
         // Indent
@@ -194,11 +194,11 @@ void draw_cube(char sides[SIDE_COUNT][CELL_COUNT]) {
 }
 
 // Flip across diagonal which resembles backslash (\)
-void flip_side_diag_back(char cells[])
+void flip_side_diag_back(uchar cells[])
 {
     int i, j = 0;
     int compl_k; // index of cell with which k is swapped
-    char tmp; // temp storage
+    uchar tmp; // temp storage
     for (int k = 0; k < CELL_COUNT; k++) {
         i = k / CUBE_SIZE;
         j = k % CUBE_SIZE;
@@ -212,11 +212,11 @@ void flip_side_diag_back(char cells[])
 }
 
 // Flip across diagonal which resembles forward slash (/)
-void flip_side_diag_forw(char cells[])
+void flip_side_diag_forw(uchar cells[])
 {
     int i, j = 0;
     int compl_k; // index of cell with which k is swapped
-    char tmp; // temp storage
+    uchar tmp; // temp storage
     for (int k = 0; k < CELL_COUNT; k++) {
         i = k / CUBE_SIZE;
         j = k % CUBE_SIZE;
@@ -232,12 +232,12 @@ void flip_side_diag_forw(char cells[])
 }
 
 // Flip across horizontal line at the center
-void flip_side_horiz(char cells[])
+void flip_side_horiz(uchar cells[])
 {
     const int half = CUBE_SIZE / 2;
     int i, j = 0;
     int compl_k;
-    char tmp;
+    uchar tmp;
     for (int k = 0; k < CUBE_SIZE; k++) {
         i = k / CUBE_SIZE;
         if (i == half)
@@ -250,46 +250,46 @@ void flip_side_horiz(char cells[])
     }
 }
 
-void rotate_side_right(char cells[CELL_COUNT])
+void rotate_side_right(uchar cells[CELL_COUNT])
 {
     flip_side_diag_forw(cells);
     flip_side_horiz(cells);
 }
 
-void rotate_side_left(char cells[])
+void rotate_side_left(uchar cells[])
 {
     flip_side_diag_back(cells);
     flip_side_horiz(cells);
 }
 
-void copy_side(char to[], char from[])
+void copy_side(uchar to[], uchar from[])
 {
     for (int i = 0; i < CELL_COUNT; i++)
         to[i] = from[i];
 }
 
-void copy_all_sides(char to[][CELL_COUNT], char from[][CELL_COUNT])
+void copy_all_sides(uchar to[][CELL_COUNT], uchar from[][CELL_COUNT])
 {
     for (int i = 0; i < SIDE_COUNT; i++)
         copy_side(to[i], from[i]);
 }
 
-void copy_side_region(char to[], int to_indices[], char from[], int from_indices[])
+void copy_side_region(uchar to[], int to_indices[], uchar from[], int from_indices[])
 {
     for (int i = 0; i < CUBE_SIZE; i++) {
         to[to_indices[i]] = from[from_indices[i]];
     }
 }
 
-void swap_regions(char side1[], int side1_region[], char side2[], int side2_region[])
+void swap_regions(uchar side1[], int side1_region[], uchar side2[], int side2_region[])
 {
-    char tmp_side[CELL_COUNT];
+    uchar tmp_side[CELL_COUNT];
     copy_side_region(tmp_side, side1_region, side1, side1_region);
     copy_side_region(side1, side1_region, side2, side2_region);
     copy_side_region(side2, side2_region, tmp_side, side1_region);
 }
 
-void north_right(char sides[][CELL_COUNT])
+void north_right(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[5], NORTH_REGION, sides[4], NORTH_REGION);
     swap_regions(sides[4], NORTH_REGION, sides[0], NORTH_REGION);
@@ -297,7 +297,7 @@ void north_right(char sides[][CELL_COUNT])
     rotate_side_left(sides[2]);
 }
 
-void north_left(char sides[][CELL_COUNT])
+void north_left(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[1], NORTH_REGION, sides[0], NORTH_REGION);
     swap_regions(sides[0], NORTH_REGION, sides[4], NORTH_REGION);
@@ -305,7 +305,7 @@ void north_left(char sides[][CELL_COUNT])
     rotate_side_right(sides[2]);
 }
 
-void south_right(char sides[][CELL_COUNT])
+void south_right(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[5], SOUTH_REGION, sides[4], SOUTH_REGION);
     swap_regions(sides[4], SOUTH_REGION, sides[0], SOUTH_REGION);
@@ -313,7 +313,7 @@ void south_right(char sides[][CELL_COUNT])
     rotate_side_right(sides[3]);
 }
 
-void south_left(char sides[][CELL_COUNT])
+void south_left(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[1], SOUTH_REGION, sides[0], SOUTH_REGION);
     swap_regions(sides[0], SOUTH_REGION, sides[4], SOUTH_REGION);
@@ -321,7 +321,7 @@ void south_left(char sides[][CELL_COUNT])
     rotate_side_left(sides[3]);
 }
 
-void east_down(char sides[][CELL_COUNT])
+void east_down(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[2], EAST_REGION, sides[0], EAST_REGION);
     swap_regions(sides[2], EAST_REGION, sides[3], EAST_REGION);
@@ -329,7 +329,7 @@ void east_down(char sides[][CELL_COUNT])
     rotate_side_left(sides[4]);
 }
 
-void east_up(char sides[][CELL_COUNT])
+void east_up(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[2], EAST_REGION, sides[3], EAST_REGION);
     swap_regions(sides[2], EAST_REGION, sides[0], EAST_REGION);
@@ -337,7 +337,7 @@ void east_up(char sides[][CELL_COUNT])
     rotate_side_right(sides[4]);
 }
 
-void west_down(char sides[][CELL_COUNT])
+void west_down(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[2], WEST_REGION, sides[0], WEST_REGION);
     swap_regions(sides[2], WEST_REGION, sides[3], WEST_REGION);
@@ -345,7 +345,7 @@ void west_down(char sides[][CELL_COUNT])
     rotate_side_right(sides[1]);
 }
 
-void west_up(char sides[][CELL_COUNT])
+void west_up(uchar sides[][CELL_COUNT])
 {
     swap_regions(sides[2], WEST_REGION, sides[3], WEST_REGION);
     swap_regions(sides[2], WEST_REGION, sides[0], WEST_REGION);
@@ -353,9 +353,9 @@ void west_up(char sides[][CELL_COUNT])
     rotate_side_left(sides[1]);
 }
 
-void front_left(char sides[][CELL_COUNT])
+void front_left(uchar sides[][CELL_COUNT])
 {
-    char tmp_side[CELL_COUNT];
+    uchar tmp_side[CELL_COUNT];
     copy_side_region(tmp_side, EAST_REGION, sides[1], EAST_REGION); // 1->tmp
     copy_side_region(sides[1], REV_EAST_REGION, sides[2], SOUTH_REGION); // 2->1
     copy_side_region(sides[2], SOUTH_REGION, sides[4], WEST_REGION); // 4->2
@@ -364,9 +364,9 @@ void front_left(char sides[][CELL_COUNT])
     rotate_side_left(sides[0]);
 }
 
-void front_right(char sides[][CELL_COUNT])
+void front_right(uchar sides[][CELL_COUNT])
 {
-    char tmp_side[CELL_COUNT];
+    uchar tmp_side[CELL_COUNT];
     copy_side_region(tmp_side, EAST_REGION, sides[1], EAST_REGION); // 1->tmp
     copy_side_region(sides[1], EAST_REGION, sides[3], NORTH_REGION); // 3->1
     copy_side_region(sides[3], REV_NORTH_REGION, sides[4], WEST_REGION); // 4->3
@@ -376,9 +376,9 @@ void front_right(char sides[][CELL_COUNT])
 }
 
 // With side 0 facing the camera
-void back_right(char sides[][CELL_COUNT])
+void back_right(uchar sides[][CELL_COUNT])
 {
-    char tmp_side[CELL_COUNT];
+    uchar tmp_side[CELL_COUNT];
     copy_side_region(tmp_side, WEST_REGION, sides[1], WEST_REGION); // 1->tmp
     copy_side_region(sides[1], WEST_REGION, sides[3], SOUTH_REGION); // 3->1
     copy_side_region(sides[3], SOUTH_REGION, sides[4], REV_EAST_REGION); // 4->3
@@ -388,9 +388,9 @@ void back_right(char sides[][CELL_COUNT])
 }
 
 // With side 0 facing the camera
-void back_left(char sides[][CELL_COUNT])
+void back_left(uchar sides[][CELL_COUNT])
 {
-    char tmp_side[CELL_COUNT];
+    uchar tmp_side[CELL_COUNT];
     copy_side_region(tmp_side, WEST_REGION, sides[1], WEST_REGION); // 1->tmp
     copy_side_region(sides[1], REV_WEST_REGION, sides[2], NORTH_REGION); // 2->1
     copy_side_region(sides[2], NORTH_REGION, sides[4], EAST_REGION); // 4->2
@@ -399,7 +399,7 @@ void back_left(char sides[][CELL_COUNT])
     rotate_side_right(sides[5]);
 }
 
-int are_sides_same(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
+int are_sides_same(uchar sides1[][CELL_COUNT], uchar sides2[][CELL_COUNT])
 {
     for (int i = 0; i < SIDE_COUNT; i++) {
         for (int j = 0; j < CELL_COUNT; j++) {
@@ -411,7 +411,7 @@ int are_sides_same(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
 }
 
 // Returns 0 if no action applied, 1 if applied
-int apply_action(char gene, char sides[][CELL_COUNT])
+int apply_action(uchar gene, uchar sides[][CELL_COUNT])
 {
     switch(gene) {
     case NORTH_LEFT:  north_left(sides); break;
@@ -433,10 +433,10 @@ int apply_action(char gene, char sides[][CELL_COUNT])
 }
 
 // TODO not portable across different solved_sides
-//char color_table[256];
-//char opposites[SIDE_COUNT] = {5, 4, 3, 2, 1, 0};
+//uchar color_table[256];
+//uchar opposites[SIDE_COUNT] = {5, 4, 3, 2, 1, 0};
 
-int get_similarity_score(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
+int get_similarity_score(uchar sides1[][CELL_COUNT], uchar sides2[][CELL_COUNT])
 {
     int score = 1;
     /* int cross = 0; */
@@ -457,10 +457,10 @@ int get_similarity_score(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
     return score;
 }
 
-int calculate_fitness(char chromo[], char sides[][CELL_COUNT],
-                      char desired_sides[][CELL_COUNT])
+int calculate_fitness(uchar chromo[], uchar sides[][CELL_COUNT],
+                      uchar desired_sides[][CELL_COUNT])
 {
-    char tmp_sides[SIDE_COUNT][CELL_COUNT];
+    uchar tmp_sides[SIDE_COUNT][CELL_COUNT];
     copy_all_sides(tmp_sides, sides);
     for (int i = 0; i < CHROMO_LENGTH; i++) {
         apply_action(chromo[i], tmp_sides);
@@ -484,10 +484,10 @@ int roulette(int fitnesses[], int total_fitness)
 }
 
 int superfit_score = 0;
-char superfit[CHROMO_LENGTH];
+uchar superfit[CHROMO_LENGTH];
 int generation_count;
-char population[POPULATION_SIZE][CHROMO_LENGTH];
-char children[POPULATION_SIZE][CHROMO_LENGTH];
+uchar population[POPULATION_SIZE][CHROMO_LENGTH];
+uchar children[POPULATION_SIZE][CHROMO_LENGTH];
 int fitnesses[POPULATION_SIZE];
 
 int m = 0;
@@ -515,8 +515,10 @@ int main(void)
     int total_fitness = 0;
     int fittest_i = 0;
     int solution_found = 0;
-    char sides_buf[SIDE_COUNT][CELL_COUNT];
+    uchar sides_buf[SIDE_COUNT][CELL_COUNT];
     while (!solution_found && generation_count < MAX_GENERATIONS) {
+
+        // Evaluation
         for (int i = 0; i < POPULATION_SIZE; i++) {
 
             // Calculate fitness. If solved, return
@@ -544,7 +546,7 @@ int main(void)
             }
         }
 
-        // Draw resulting cube of the fittest chromosome
+        // Draw resulting cube of the fittest chromosome of the generation
         if (generation_count % DRAW_EVERY == 0) {
             copy_all_sides(sides_buf, sides);
             for (int i = 0; i < CHROMO_LENGTH; i++)
@@ -554,7 +556,7 @@ int main(void)
             print_chromo(population[fittest_i]);
         }
 
-        // Select, crossover, and mutate
+        // Selection & breeding
         for (int i = 0; i < POPULATION_SIZE; i += 2) {
             // Select 2 parents
             int parent1_i = roulette(fitnesses, total_fitness);

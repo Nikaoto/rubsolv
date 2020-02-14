@@ -1,7 +1,6 @@
 rubsolv todo
 
 Things to try
-- Try Genitor-style immediate repopulation
 - Try Genitor-style fitness ranking
 - Try intermediate generation (u + lambda)ES
 - Try remainder stohastic sampling
