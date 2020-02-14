@@ -1,5 +1,5 @@
 # rubsolv
-Genetic algorithm I wrote for fun and practice. This is the closest it got to solving a cube:
+Genetic algorithm that tries to solve a rubik's cube that I wrote for fun and practice. This is the closest it got to solving a cube:
 
 ![It tried its best](best-try.png)
 
