@@ -165,7 +165,8 @@ inline void print_cell(uchar cell)
 }
 #endif
 
-void draw_cube(uchar sides[SIDE_COUNT][CELL_COUNT]) {
+void draw_cube(uchar sides[SIDE_COUNT][CELL_COUNT])
+{
     // Draw side 2
     for (size_t x = 0; x < CUBE_SIZE; x++) {
         // Indent
@@ -441,10 +442,6 @@ int apply_action(uchar gene, uchar sides[][CELL_COUNT])
     return 1;
 }
 
-// TODO not portable across different solved_sides
-//uchar color_table[256];
-//uchar opposites[SIDE_COUNT] = {5, 4, 3, 2, 1, 0};
-
 int get_similarity_score(uchar sides1[][CELL_COUNT], uchar sides2[][CELL_COUNT])
 {
     int score = 1;
@@ -481,9 +478,9 @@ int calculate_fitness(uchar chromo[], uchar sides[][CELL_COUNT],
     uchar tmp_sides[SIDE_COUNT][CELL_COUNT];
     copy_all_sides(tmp_sides, sides);
     for (int i = 0; i < CHROMO_LENGTH; i++) {
-        apply_action(chromo[i], tmp_sides);
-        //if (applied && are_sides_same(tmp_sides, solved_sides))
-        //return SOLUTION_REWARD;
+        int applied = apply_action(chromo[i], tmp_sides);
+        if (applied && are_sides_same(tmp_sides, solved_sides))
+            return SOLUTION_REWARD;
     }
     return get_similarity_score(tmp_sides, solved_sides);
 }
