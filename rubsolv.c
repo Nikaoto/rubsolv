@@ -5,24 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "config.h"
 #include "colors.h"
 
-#define CUBE_SIZE         3
-#define CELL_COUNT        CUBE_SIZE * CUBE_SIZE
-#define SIDE_COUNT        6
-#define GENE_SIZE         3
-#define CHROMO_LENGTH     50
-#define MAX_GENERATIONS   10000
-#define POPULATION_SIZE   1500
-#define CELL_STR          "  "
-#define COLOR_CELLS       1
-#define SOLUTION_REWARD   100000
-#define MUTATION_RATE     0.005f * GENE_SIZE
-#define CROSSOVER_RATE    0.4f
-#define REWARD_ACTION     +
-#define REWARD_MULT       1
-#define DRAW_EVERY        200
-#define RAND_END          (int) ((RAND_MAX / n) * n)
+#define char unsigned char
+
+// sides.h
+char sides[SIDE_COUNT][CELL_COUNT];
+char solved_sides[SIDE_COUNT][CELL_COUNT];
+//
 
 // Regions
 int NORTH_REGION[] = {0, 1, 2};
@@ -44,10 +35,10 @@ enum GENE_TYPE {
     SOUTH_RIGHT,    // 0101 Rotate bottom side counter-clockwise
     WEST_UP,        // 0110 Rotate left side upwards
     WEST_DOWN,      // 0111 Rotate left side downwards
-    /* FRONT_LEFT,     // 1000 Rotate front side counter-clockwise */
-    /* FRONT_RIGHT,    // 1001 Rotate front side clockwise */
-    /* BACK_LEFT,      // 1010 Rotate back side counter-clockwise */
-    /* BACK_RIGHT,     // 1011 Rotate back side clockwise */
+    FRONT_LEFT,     // 1000 Rotate front side counter-clockwise
+    FRONT_RIGHT,    // 1001 Rotate front side clockwise
+    BACK_LEFT,      // 1010 Rotate back side counter-clockwise
+    BACK_RIGHT,     // 1011 Rotate back side clockwise
 };
 
 // Returns unbiased random integer in range [0, n)
@@ -58,7 +49,8 @@ int randint(int n)
     }
 
     int r;
-    while ((r = rand()) >= RAND_END);
+    int rand_end = (RAND_MAX / n) * n;
+    while ((r = rand()) >= rand_end);
     return r % n;
 }
 
@@ -72,7 +64,7 @@ float randscale()
 
 char get_random_gene()
 {
-    return 1 << randint(GENE_SIZE);
+    return randint(1 << GENE_SIZE);
 }
 
 void random_chromo(char chromo[])
@@ -92,9 +84,10 @@ void copy_chromo(char to[], char from[])
 void print_chromo(char chromo[])
 {
     size_t i = 0;
-    while (i < CHROMO_LENGTH - 1)
-        printf("%X", chromo[i++]);
-    printf("%X", chromo[++i]);
+    while (i < CHROMO_LENGTH - 1) {
+        printf("%x,", chromo[i++]);
+    }
+    printf("%x", chromo[i]);
 }
 
 void crossover(char parent1[], char parent2[], char child1[], char child2[])
@@ -125,75 +118,12 @@ void mutate(char chromo[])
             continue;
         }
 
-        int n = randint(GENE_SIZE);
-        int mask = ~(1 << n);
-        // Flip nth bit in chromo[i]
+        // Flip nth bit in gene
+        char n = randint(GENE_SIZE);
+        char mask = 1 << n;
         chromo[i] = (~chromo[i] & mask) | (chromo[i] & ~mask);
     }
 }
-
-char sides[SIDE_COUNT][CELL_COUNT] = {
-    // Side 0
-    { 'w', 'w', 'w',
-      'w', 'w', 'w',
-      'w', 'w', 'w', },
-
-    // Side 1
-    { 'g', 'g', 'r',
-      'y', 'b', 'r',
-      'y', 'o', 'b', },
-
-    // Side 2
-    { 'y', 'o', 'o',
-      'r', 'r', 'o',
-      'g', 'b', 'g', },
-
-    // Side 3
-    { 'o', 'g', 'r',
-      'y', 'o', 'r',
-      'r', 'y', 'y', },
-
-    // Side 4
-    { 'o', 'g', 'b',
-      'o', 'g', 'y',
-      'b', 'b', 'o', },
-
-    // Side 5
-    { 'y', 'b', 'r',
-      'b', 'y', 'r',
-      'g', 'g', 'b', },
-};
-char solved_sides[SIDE_COUNT][CELL_COUNT] = {
-    // Side 0
-    { 'w', 'w', 'w',
-      'w', 'w', 'w',
-      'w', 'w', 'w', },
-
-    // Side 1
-    { 'b', 'b', 'b',
-      'b', 'b', 'b',
-      'b', 'b', 'b', },
-
-    // Side 2
-    { 'r', 'r', 'r',
-      'r', 'r', 'r',
-      'r', 'r', 'r', },
-
-    // Side 3
-    { 'o', 'o', 'o',
-      'o', 'o', 'o',
-      'o', 'o', 'o', },
-
-    // Side 4
-    { 'g', 'g', 'g',
-      'g', 'g', 'g',
-      'g', 'g', 'g', },
-
-    // Side 5
-    { 'y', 'y', 'y',
-      'y', 'y', 'y',
-      'y', 'y', 'y', },
-};
 
 /* Numbered side for debugging
 
@@ -423,6 +353,52 @@ void west_up(char sides[][CELL_COUNT])
     rotate_side_left(sides[1]);
 }
 
+void front_left(char sides[][CELL_COUNT])
+{
+    char tmp_side[CELL_COUNT];
+    copy_side_region(tmp_side, EAST_REGION, sides[1], EAST_REGION); // 1->tmp
+    copy_side_region(sides[1], REV_EAST_REGION, sides[2], SOUTH_REGION); // 2->1
+    copy_side_region(sides[2], SOUTH_REGION, sides[4], WEST_REGION); // 4->2
+    copy_side_region(sides[4], REV_WEST_REGION, sides[3], NORTH_REGION); // 3->4
+    copy_side_region(sides[3], NORTH_REGION, tmp_side, EAST_REGION); // tmp->3
+    rotate_side_left(sides[0]);
+}
+
+void front_right(char sides[][CELL_COUNT])
+{
+    char tmp_side[CELL_COUNT];
+    copy_side_region(tmp_side, EAST_REGION, sides[1], EAST_REGION); // 1->tmp
+    copy_side_region(sides[1], EAST_REGION, sides[3], NORTH_REGION); // 3->1
+    copy_side_region(sides[3], REV_NORTH_REGION, sides[4], WEST_REGION); // 4->3
+    copy_side_region(sides[4], WEST_REGION, sides[2], SOUTH_REGION); // 2->4
+    copy_side_region(sides[2], REV_SOUTH_REGION, tmp_side, EAST_REGION); // tmp->2
+    rotate_side_right(sides[0]);
+}
+
+// With side 0 facing the camera
+void back_right(char sides[][CELL_COUNT])
+{
+    char tmp_side[CELL_COUNT];
+    copy_side_region(tmp_side, WEST_REGION, sides[1], WEST_REGION); // 1->tmp
+    copy_side_region(sides[1], WEST_REGION, sides[3], SOUTH_REGION); // 3->1
+    copy_side_region(sides[3], SOUTH_REGION, sides[4], REV_EAST_REGION); // 4->3
+    copy_side_region(sides[4], EAST_REGION, sides[2], NORTH_REGION); // 2->4
+    copy_side_region(sides[2], REV_NORTH_REGION, tmp_side, WEST_REGION); // tmp->2
+    rotate_side_left(sides[5]);
+}
+
+// With side 0 facing the camera
+void back_left(char sides[][CELL_COUNT])
+{
+    char tmp_side[CELL_COUNT];
+    copy_side_region(tmp_side, WEST_REGION, sides[1], WEST_REGION); // 1->tmp
+    copy_side_region(sides[1], REV_WEST_REGION, sides[2], NORTH_REGION); // 2->1
+    copy_side_region(sides[2], NORTH_REGION, sides[4], EAST_REGION); // 4->2
+    copy_side_region(sides[4], EAST_REGION, sides[3], REV_SOUTH_REGION); // 3->4
+    copy_side_region(sides[3], SOUTH_REGION, tmp_side, WEST_REGION); // tmp->3
+    rotate_side_right(sides[5]);
+}
+
 int are_sides_same(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
 {
     for (int i = 0; i < SIDE_COUNT; i++) {
@@ -446,10 +422,10 @@ int apply_action(char gene, char sides[][CELL_COUNT])
     case EAST_DOWN:   east_down(sides); break;
     case WEST_UP:     west_up(sides); break;
     case WEST_DOWN:   west_down(sides); break;
-    /* case FRONT_LEFT:  front_left(sides); break; */
-    /* case FRONT_RIGHT: front_right(sides); break; */
-    /* case BACK_LEFT:   back_lefft(sides); break; */
-    /* case BACK_RIGHT:  back_right(sides); break; */
+    case FRONT_LEFT:  front_left(sides); break;
+    case FRONT_RIGHT: front_right(sides); break;
+    case BACK_LEFT:   back_left(sides); break;
+    case BACK_RIGHT:  back_right(sides); break;
     default: return 0;
     }
 
@@ -463,20 +439,20 @@ int apply_action(char gene, char sides[][CELL_COUNT])
 int get_similarity_score(char sides1[][CELL_COUNT], char sides2[][CELL_COUNT])
 {
     int score = 1;
+    /* int cross = 0; */
     for (int s = 0; s < SIDE_COUNT; s++) {
-        int cross = 0;
         for (int k = 0; k < CELL_COUNT; k++) {
             if (k != 4 && sides1[s][k] == sides2[s][k]) {
                 score = score REWARD_ACTION REWARD_MULT;
-                if (k % 2 == 1) {
-                    cross += 1;
-                    score += cross;
-                }
+                /* if (k % 2 == 1) { */
+                /*     cross += 1; */
+                /* } */
             }
         }
-        if (cross > 3) {
-            score += 10;
-        }
+        /* if (cross > 3 && cross < 5) { */
+        /*     cross += 1; */
+        /*     score += 20; */
+        /* } */
     }
     return score;
 }
@@ -487,9 +463,9 @@ int calculate_fitness(char chromo[], char sides[][CELL_COUNT],
     char tmp_sides[SIDE_COUNT][CELL_COUNT];
     copy_all_sides(tmp_sides, sides);
     for (int i = 0; i < CHROMO_LENGTH; i++) {
-        int applied = apply_action(chromo[i], tmp_sides);
-        if (applied && are_sides_same(tmp_sides, solved_sides))
-            return SOLUTION_REWARD;
+        apply_action(chromo[i], tmp_sides);
+        //if (applied && are_sides_same(tmp_sides, solved_sides))
+        //return SOLUTION_REWARD;
     }
     return get_similarity_score(tmp_sides, solved_sides);
 }
@@ -514,6 +490,13 @@ char population[POPULATION_SIZE][CHROMO_LENGTH];
 char children[POPULATION_SIZE][CHROMO_LENGTH];
 int fitnesses[POPULATION_SIZE];
 
+int m = 0;
+void mark()
+{
+    printf("MARK %i\n", m++);
+}
+    
+
 int main(void)
 {
     srand(time(NULL));
@@ -530,7 +513,7 @@ int main(void)
     }
 
     int total_fitness = 0;
-    int fittest_i;
+    int fittest_i = 0;
     int solution_found = 0;
     char sides_buf[SIDE_COUNT][CELL_COUNT];
     while (!solution_found && generation_count < MAX_GENERATIONS) {
@@ -568,6 +551,7 @@ int main(void)
                 apply_action(population[fittest_i][i], sides_buf);
             printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
             draw_cube(sides_buf);
+            print_chromo(population[fittest_i]);
         }
 
         // Select, crossover, and mutate
@@ -576,23 +560,33 @@ int main(void)
             int parent1_i = roulette(fitnesses, total_fitness);
             int parent2_i = roulette(fitnesses, total_fitness);
 
-            // Crossover (family consists of 2 parents and 2 children)
+#if CROSSOVER == 1
             crossover(
                 population[parent1_i],
                 population[parent2_i],
                 children[i],
                 children[i + 1]);
-
-            // Mutate
+#else
+            copy_chromo(children[i], population[parent1_i]);
+            copy_chromo(children[i + 1], population[parent2_i]);
+#endif
+#if MUTATE == 1
             mutate(children[i]);
             mutate(children[i + 1]);
+#endif
+
+#if IMMEDIATE_REPOP == 1
+            copy_chromo(population[randint(POPULATION_SIZE)], children[i]);
+            copy_chromo(population[randint(POPULATION_SIZE)], children[i + 1]);
+#endif
         }
 
+#if IMMEDIATE_REPOP == 0
         // Replace population with children
         for (int i = 0; i < POPULATION_SIZE; i++) {
             copy_chromo(population[i], children[i]);
         }
-
+#endif
         total_fitness = 0;
         fittest_i = 0;
         generation_count += 1;
@@ -615,5 +609,7 @@ int main(void)
         apply_action(superfit[i], sides_buf);
     printf("\n Superfit chromosome (%i): \n", superfit_score);
     draw_cube(sides_buf);
+    printf("\n");
+    print_chromo(superfit);
     printf("\n");
 }

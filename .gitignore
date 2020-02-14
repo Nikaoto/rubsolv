@@ -1,3 +1,5 @@
 rubsolv
 rubsolv_slow
 *.o
+rubsolv_g
+rubsolv_g.dSYM

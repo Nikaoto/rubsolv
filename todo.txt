@@ -1,7 +1,6 @@
 rubsolv todo
 
 Things to try
-- add 4 more genes: front left-right (2) and back left-right (2, which makes 4)
 - Try Genitor-style immediate repopulation
 - Try Genitor-style fitness ranking
 - Try intermediate generation (u + lambda)ES
