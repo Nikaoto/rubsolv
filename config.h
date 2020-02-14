@@ -24,7 +24,7 @@
 #define MAX_GENERATIONS   10000
 #define POPULATION_SIZE   1000
 #define SOLUTION_REWARD   100000
-#define MUTATION_RATE     0.002f * GENE_SIZE
+#define MUTATION_RATE     0.024f * GENE_SIZE
 #define CROSSOVER_RATE    0.64f
 #define REWARD_ACTION     +
 #define REWARD_MULT       1
