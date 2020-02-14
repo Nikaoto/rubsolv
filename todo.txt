@@ -1,7 +1,0 @@
-rubsolv todo
-
-Things to try
-- Try Genitor-style fitness ranking
-- Try intermediate generation (u + lambda)ES
-- Try remainder stohastic sampling
-- Try average fitness assignment: fitness = f_i/f_avg
