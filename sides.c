@@ -1,5 +1,19 @@
 #include "config.h"
 
+/*
+   Numbered side for debugging
+
+   { '0', '1', '2',
+     '3', '4', '5',
+     '6', '7', '8', },
+
+   Alphabetized side
+
+   { 'A', 'B', 'C',
+     'D', 'E', 'F',
+     'G', 'H', 'I', },
+*/
+
 char solved_sides[SIDE_COUNT][CELL_COUNT] = {
      // Side 0
      { 'w', 'w', 'w',
@@ -34,64 +48,33 @@ char solved_sides[SIDE_COUNT][CELL_COUNT] = {
 
 char sides[SIDE_COUNT][CELL_COUNT] = {
      // Side 0
-     { 'y', 'w', 'g',
+     { 'o', 'w', 'o',
        'w', 'w', 'w',
-       'o', 'w', 'b', },
+       'o', 'w', 'r', },
 
      // Side 1
-     { 'o', 'y', 'g',
-       'b', 'b', 'o',
-       'w', 'y', 'y', },
+     { 'b', 'y', 'b',
+       'r', 'b', 'o',
+       'w', 'o', 'y', },
 
      // Side 2
+     { 'r', 'r', 'g',
+       'b', 'r', 'y',
+       'w', 'b', 'y', },
+
+     // Side 3
+     { 'g', 'g', 'b',
+       'b', 'o', 'g',
+       'g', 'g', 'w', },
+
+     // Side 4
      { 'b', 'o', 'y',
-       'o', 'r', 'b',
-       'r', 'b', 'w', },
-
-     // Side 3
-     { 'g', 'g', 'w',
-       'r', 'o', 'g',
-       'o', 'o', 'w', },
-
-     // Side 4
-     { 'r', 'r', 'b',
        'r', 'g', 'g',
-       'r', 'r', 'g', },
+       'w', 'r', 'r', },
 
      // Side 5
-     { 'r', 'g', 'y',
-       'y', 'y', 'y',
-       'o', 'b', 'b', },
+     { 'r', 'y', 'y',
+       'o', 'y', 'b',
+       'g', 'y', 'o', },
 };
 
-char sides_2[SIDE_COUNT][CELL_COUNT] = {
-     // Side 0
-     { 'w', 'w', 'w',
-       'w', 'w', 'r',
-       'w', 'w', 'w', },
-
-     // Side 1
-     { 'b', 'o', 'b',
-       'g', 'b', 'b',
-       'b', 'b', 'b', },
-
-     // Side 2
-     { 'r', 'r', 'r',
-       'y', 'r', 'o',
-       'r', 'o', 'r', },
-
-     // Side 3
-     { 'o', 'r', 'o',
-       'y', 'o', 'y',
-       'o', 'g', 'o', },
-
-     // Side 4
-     { 'g', 'b', 'g',
-       'g', 'g', 'b',
-       'g', 'g', 'g', },
-
-     // Side 5
-     { 'y', 'y', 'y',
-       'r', 'y', 'o',
-       'y', 'w', 'y', },
-};

@@ -8,6 +8,14 @@
 #include "config.h"
 #include "colors.h"
 
+#if POPULATION_SIZE % 2 == 1
+#error "POPULATION_SIZE must be even"
+#endif
+
+#if INTERMEDIATE_POP == 1 && IMMEDIATE_REPOP == 1
+#error "Can't repopulate immediately with intermediate population present"
+#endif
+
 typedef unsigned char uchar;
 
 // sides.h
@@ -27,18 +35,18 @@ int REV_WEST_REGION[]  = {6, 3, 0};
 
 // Genes / actions
 enum GENE_TYPE {
-    NORTH_LEFT,     // 0000 Rotate top side clockwise
-    NORTH_RIGHT,    // 0001 Rotate top side counter-clockwise
-    EAST_UP,        // 0010 Rotate right side upwards
-    EAST_DOWN,      // 0011 Rotate right side downwards
-    SOUTH_LEFT,     // 0100 Rotate bottom side clockwise
-    SOUTH_RIGHT,    // 0101 Rotate bottom side counter-clockwise
-    WEST_UP,        // 0110 Rotate left side upwards
-    WEST_DOWN,      // 0111 Rotate left side downwards
-    FRONT_LEFT,     // 1000 Rotate front side counter-clockwise
-    FRONT_RIGHT,    // 1001 Rotate front side clockwise
-    BACK_LEFT,      // 1010 Rotate back side counter-clockwise
-    BACK_RIGHT,     // 1011 Rotate back side clockwise
+    NORTH_LEFT,     // 0x0 Rotate top side clockwise
+    NORTH_RIGHT,    // 0x1 Rotate top side counter-clockwise
+    EAST_UP,        // 0x2 Rotate right side upwards
+    EAST_DOWN,      // 0x3 Rotate right side downwards
+    SOUTH_LEFT,     // 0x4 Rotate bottom side clockwise
+    SOUTH_RIGHT,    // 0x5 Rotate bottom side counter-clockwise
+    WEST_UP,        // 0x6 Rotate left side upwards
+    WEST_DOWN,      // 0x7 Rotate left side downwards
+    FRONT_LEFT,     // 0x8 Rotate front side counter-clockwise
+    FRONT_RIGHT,    // 0x9 Rotate front side clockwise
+    BACK_LEFT,      // 0xA Rotate back side counter-clockwise
+    BACK_RIGHT,     // 0xB Rotate back side clockwise
 };
 
 // Returns unbiased random integer in range [0, n)
@@ -90,6 +98,7 @@ void print_chromo(uchar chromo[])
     printf("%x", chromo[i]);
 }
 
+#if CROSSOVER == 1
 void crossover(uchar parent1[], uchar parent2[], uchar child1[], uchar child2[])
 {
     if (randscale() > CROSSOVER_RATE) {
@@ -110,7 +119,15 @@ void crossover(uchar parent1[], uchar parent2[], uchar child1[], uchar child2[])
         child2[i] = parent2[i];
     }
 }
+#else
+void crossover(uchar parent1[], uchar parent2[], uchar child1[], uchar child2[])
+{
+    copy_chromo(child1, parent1);
+    copy_chromo(child2, parent2);
+}
+#endif
 
+#if MUTATE == 1
 void mutate(uchar chromo[])
 {
     for (int i = 0; i < CHROMO_LENGTH; i++) {
@@ -124,37 +141,29 @@ void mutate(uchar chromo[])
         chromo[i] = (~chromo[i] & mask) | (chromo[i] & ~mask);
     }
 }
+#else
+void mutate(uchar chromo[]) {}
+#endif
 
-/* Numbered side for debugging
-
-   {'0', '1', '2',
-   '3', '4', '5',
-   '6', '7', '8', },
-
-   Alphabetized side
-
-   {'A', 'B', 'C',
-   'D', 'E', 'F',
-   'G', 'H', 'I', },
-
-*/
-
+#if COLOR_CELLS == 1
 void print_cell(uchar cell)
 {
-    if (COLOR_CELLS) {
-        switch(cell) {
-        case 'r': printf("%s%s%s", RED, CELL_STR, END); break;
-        case 'b': printf("%s%s%s", BLUE, CELL_STR, END); break;
-        case 'g': printf("%s%s%s", GREEN, CELL_STR, END); break;
-        case 'y': printf("%s%s%s", YELLOW, CELL_STR, END); break;
-        case 'o': printf("%s%s%s", ORANGE, CELL_STR, END); break;
-        case 'w': printf("%s%s%s", WHITE, CELL_STR, END); break;
-        default: printf("%c ", cell); break;
-        }
-    } else {
-        printf("%c ", cell);
+    switch(cell) {
+    case 'r': printf("%s%s%s", RED, CELL_STR, END); break;
+    case 'b': printf("%s%s%s", BLUE, CELL_STR, END); break;
+    case 'g': printf("%s%s%s", GREEN, CELL_STR, END); break;
+    case 'y': printf("%s%s%s", YELLOW, CELL_STR, END); break;
+    case 'o': printf("%s%s%s", ORANGE, CELL_STR, END); break;
+    case 'w': printf("%s%s%s", WHITE, CELL_STR, END); break;
+    default: printf("%c ", cell); break;
     }
 }
+#else
+inline void print_cell(uchar cell)
+{
+    printf("%c ", cell);
+}
+#endif
 
 void draw_cube(uchar sides[SIDE_COUNT][CELL_COUNT]) {
     // Draw side 2
@@ -439,21 +448,30 @@ int apply_action(uchar gene, uchar sides[][CELL_COUNT])
 int get_similarity_score(uchar sides1[][CELL_COUNT], uchar sides2[][CELL_COUNT])
 {
     int score = 1;
-    /* int cross = 0; */
+#if CROSS_BONUS > 0
+    int cross = 0;
+#endif
     for (int s = 0; s < SIDE_COUNT; s++) {
         for (int k = 0; k < CELL_COUNT; k++) {
             if (k != 4 && sides1[s][k] == sides2[s][k]) {
                 score = score REWARD_ACTION REWARD_MULT;
-                /* if (k % 2 == 1) { */
-                /*     cross += 1; */
-                /* } */
             }
+#if CROSS_BONUS > 0
+            if (k % 2 == 1) {
+                if (sides1[s][k] == sides2[s][4])
+                    cross += 1;
+                else
+                    cross = 0;
+            }
+#endif
         }
-        /* if (cross > 3 && cross < 5) { */
-        /*     cross += 1; */
-        /*     score += 20; */
-        /* } */
     }
+
+#if CROSS_BONUS > 0
+    if (cross > 3) {
+        score += CROSS_BONUS;
+    }
+#endif
     return score;
 }
 
@@ -562,28 +580,64 @@ int main(void)
             int parent1_i = roulette(fitnesses, total_fitness);
             int parent2_i = roulette(fitnesses, total_fitness);
 
-#if CROSSOVER == 1
+#if INTERMEDIATE_POP == 1
+            // Copy to intermediate population without crossover
+            copy_chromo(children[i], population[parent1_i]);
+            copy_chromo(children[i + 1], population[parent2_i]);
+#else
             crossover(
                 population[parent1_i],
                 population[parent2_i],
                 children[i],
                 children[i + 1]);
-#else
-            copy_chromo(children[i], population[parent1_i]);
-            copy_chromo(children[i + 1], population[parent2_i]);
-#endif
-#if MUTATE == 1
+
             mutate(children[i]);
             mutate(children[i + 1]);
 #endif
-
 #if IMMEDIATE_REPOP == 1
-            copy_chromo(population[randint(POPULATION_SIZE)], children[i]);
-            copy_chromo(population[randint(POPULATION_SIZE)], children[i + 1]);
+            int weakest1 = 0;
+            int weakest2 = 1;
+            for (int j = 2; j < POPULATION_SIZE; j++) {
+                if (fitnesses[j] < fitnesses[weakest1]) {
+                    weakest2 = weakest1;
+                    weakest1 = j;
+                } else if (fitnesses[j] < fitnesses[weakest2]) {
+                    weakest2 = fitnesses[j];
+                }
+            }
+            copy_chromo(population[weakest1], children[i]);
+            copy_chromo(population[weakest2], children[i + 1]);
+
+            total_fitness = total_fitness - fitnesses[weakest1] - fitnesses[weakest2];
+            fitnesses[weakest1] = calculate_fitness(population[weakest1], sides, solved_sides);
+            fitnesses[weakest2] = calculate_fitness(population[weakest2], sides, solved_sides);
+            total_fitness += fitnesses[weakest1] + fitnesses[weakest2];
+
+            // Update fittest in generation 
+            if (fitnesses[fittest_i] < fitnesses[weakest1]) {
+                fittest_i = weakest1;
+            }
+            if (fitnesses[fittest_i] < fitnesses[weakest2]) {
+                fittest_i = weakest2;
+            }
+
+            // Save superfit
+            if (superfit_score < fitnesses[fittest_i]) {
+                superfit_score = fitnesses[fittest_i];
+                copy_chromo(superfit, population[fittest_i]);
+            }
 #endif
         }
 
-#if IMMEDIATE_REPOP == 0
+#if INTERMEDIATE_POP == 1
+        // Use children as intermediate population, cross them over
+        // and put them into new population
+        for (int i = 0; i < POPULATION_SIZE; i += 2) {
+            crossover(children[i], children[i + 1], population[i], population[i + 1]);
+            mutate(population[i]);
+            mutate(population[i + 1]);
+        }
+#elif IMMEDIATE_REPOP == 0
         // Replace population with children
         for (int i = 0; i < POPULATION_SIZE; i++) {
             copy_chromo(population[i], children[i]);
