@@ -12,8 +12,8 @@
 #error "POPULATION_SIZE must be even"
 #endif
 
-#if INTERMEDIATE_POP == 1 && IMMEDIATE_REPOP == 1
-#error "Can't repopulate immediately with intermediate population present"
+#if (SAMPLING_TYPE == STOHASTIC || SAMPLING_TYPE == REM_STOHASTIC) && IMMEDIATE_REPOP == 1
+#error "Intermediate population needed for given sampling type. Can't repopulate immediately"
 #endif
 
 typedef unsigned char uchar;
@@ -488,6 +488,42 @@ int calculate_fitness(uchar chromo[], uchar sides[][CELL_COUNT],
     return get_similarity_score(tmp_sides, solved_sides);
 }
 
+// Stohastic sampling roulette
+void ss_roulette(uchar population[][CHROMO_LENGTH], uchar children[][CHROMO_LENGTH],
+                 int fitnesses[], float avg_fitness, int total_fitness)
+{
+    float roulette_hand = randscale() * avg_fitness;
+    for (int j = 0; j < POPULATION_SIZE; j++) {
+        float point = fitnesses[0];
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            if (point > roulette_hand) {
+                copy_chromo(children[j], population[i]);
+                break;
+            }
+            point += fitnesses[i];
+        }
+        roulette_hand += avg_fitness;
+    }
+}
+
+// Remainder stohastic sampling roulette
+void rss_roulette(uchar population[][CHROMO_LENGTH], uchar children[][CHROMO_LENGTH],
+                  float avg_fitness, float avg_rel_fitnesses[], float avg_rel_total_fitness)
+{
+    float roulette_hand = randscale() * avg_fitness;
+    for (int j = 0; j < POPULATION_SIZE; j++) {
+        float point = avg_rel_fitnesses[0];
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            if (point > roulette_hand) {
+                copy_chromo(children[j], population[i]);
+                break;
+            }
+            point += avg_rel_fitnesses[i];
+        }
+        roulette_hand += avg_fitness;
+    }
+}
+
 int roulette(int fitnesses[], int total_fitness)
 {
     int roulette_hand = randint(total_fitness + 1);
@@ -513,7 +549,7 @@ void mark()
 {
     printf("MARK %i\n", m++);
 }
-    
+
 
 int main(void)
 {
@@ -522,8 +558,6 @@ int main(void)
     draw_cube(sides);
     printf("\nDesired sides:\n");
     draw_cube(solved_sides);
-
-    generation_count += 1;
 
     // Generate random population
     for (int i = 0; i < POPULATION_SIZE; i++) {
@@ -535,10 +569,12 @@ int main(void)
     int solution_found = 0;
     uchar sides_buf[SIDE_COUNT][CELL_COUNT];
     while (!solution_found && generation_count < MAX_GENERATIONS) {
+        total_fitness = 0;
+        fittest_i = 0;
+        generation_count += 1;
 
         // Evaluation
         for (int i = 0; i < POPULATION_SIZE; i++) {
-
             // Calculate fitness. If solved, return
             int fit = calculate_fitness(population[i], sides, solved_sides);
             if (fit == SOLUTION_REWARD) {
@@ -556,7 +592,7 @@ int main(void)
             if (fitnesses[fittest_i] < fit) {
                 fittest_i = i;
             }
-            
+
             // Save superfit
             if (superfit_score < fitnesses[fittest_i]) {
                 superfit_score = fitnesses[fittest_i];
@@ -564,39 +600,17 @@ int main(void)
             }
         }
 
-        // Draw resulting cube of the fittest chromosome of the generation
-        if (generation_count % DRAW_EVERY == 0) {
-            copy_all_sides(sides_buf, sides);
-            for (int i = 0; i < CHROMO_LENGTH; i++)
-                apply_action(population[fittest_i][i], sides_buf);
-            printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
-            draw_cube(sides_buf);
-            print_chromo(population[fittest_i]);
-        }
-
-        // Selection & breeding
+        // Sampling
+#if SAMPLING_TYPE == ROULETTE
         for (int i = 0; i < POPULATION_SIZE; i += 2) {
-            // Select 2 parents
-            int parent1_i = roulette(fitnesses, total_fitness);
-            int parent2_i = roulette(fitnesses, total_fitness);
-
-#if INTERMEDIATE_POP == 1
-            // Copy to intermediate population without crossover
-            copy_chromo(children[i], population[parent1_i]);
-            copy_chromo(children[i + 1], population[parent2_i]);
-#else
-            crossover(
-                population[parent1_i],
-                population[parent2_i],
-                children[i],
-                children[i + 1]);
-
-            mutate(children[i]);
-            mutate(children[i + 1]);
-#endif
-#if IMMEDIATE_REPOP == 1
-            int weakest1 = 0;
-            int weakest2 = 1;
+            int parent1 = roulette(fitnesses, total_fitness);
+            int parent2 = roulette(fitnesses, total_fitness);
+#if IMMEDIATE_REPOP == 0
+            copy_chromo(children[i], population[parent1]);
+            copy_chromo(children[i + 1], population[parent2]);
+#elif IMMEDIATE_REPOP == 1
+            // Find weakest 2
+            int weakest1 = 0, weakest2 = 1;
             for (int j = 2; j < POPULATION_SIZE; j++) {
                 if (fitnesses[j] < fitnesses[weakest1]) {
                     weakest2 = weakest1;
@@ -605,15 +619,24 @@ int main(void)
                     weakest2 = fitnesses[j];
                 }
             }
-            copy_chromo(population[weakest1], children[i]);
-            copy_chromo(population[weakest2], children[i + 1]);
 
-            total_fitness = total_fitness - fitnesses[weakest1] - fitnesses[weakest2];
+            // Replace weakest 2 with new children
+            crossover(population[parent1], population[parent2],
+                      population[weakest1], population[weakest2]);
+
+            // Mutate
+            mutate(population[weakest1]);
+            mutate(population[weakest2]);
+
+            // Update total fitness
+            total_fitness -= fitnesses[weakest1];
+            total_fitness -= fitnesses[weakest2];
             fitnesses[weakest1] = calculate_fitness(population[weakest1], sides, solved_sides);
             fitnesses[weakest2] = calculate_fitness(population[weakest2], sides, solved_sides);
-            total_fitness += fitnesses[weakest1] + fitnesses[weakest2];
+            total_fitness += fitnesses[weakest1];
+            total_fitness += fitnesses[weakest2];
 
-            // Update fittest in generation 
+            // Update fittest in generation
             if (fitnesses[fittest_i] < fitnesses[weakest1]) {
                 fittest_i = weakest1;
             }
@@ -628,36 +651,53 @@ int main(void)
             }
 #endif
         }
+#elif SAMPLING_TYPE == STOHASTIC
+        float avg_fitness = total_fitness / POPULATION_SIZE;
+        ss_roulette(population, children, fitnesses, avg_fitness, total_fitness);
+#elif SAMPLING_TYPE == REM_STOHASTIC
+        float avg_fitness = total_fitness / POPULATION_SIZE;
+        float avg_rel_total_fitness = 0;
+        float avg_rel_fitnesses[POPULATION_SIZE]; // average-relative fitnesses
+        for (int i = 0; i < POPULATION_SIZE; i++) {
+            float fit = fitnesses[i] / avg_fitness;
+            avg_rel_fitnesses[i] = fit;
+            avg_rel_total_fitness += fit;
+        }
+        rss_roulette(population, children, avg_fitness, avg_rel_fitnesses, avg_rel_total_fitness);
+#endif
 
-#if INTERMEDIATE_POP == 1
-        // Use children as intermediate population, cross them over
-        // and put them into new population
+#if IMMEDIATE_REPOP == 0
+        // Repopulate from intermediate generation
         for (int i = 0; i < POPULATION_SIZE; i += 2) {
-            crossover(children[i], children[i + 1], population[i], population[i + 1]);
+            crossover(children[i], children[i + 1],
+                      population[i], population[i + 1]);
             mutate(population[i]);
             mutate(population[i + 1]);
         }
-#elif IMMEDIATE_REPOP == 0
-        // Replace population with children
-        for (int i = 0; i < POPULATION_SIZE; i++) {
-            copy_chromo(population[i], children[i]);
-        }
 #endif
-        total_fitness = 0;
-        fittest_i = 0;
-        generation_count += 1;
+
+        // Draw resulting cube of the fittest chromo in current generation
+        if (generation_count % DRAW_EVERY == 0) {
+            copy_all_sides(sides_buf, sides);
+            for (int i = 0; i < CHROMO_LENGTH; i++)
+                apply_action(population[fittest_i][i], sides_buf);
+            printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
+            draw_cube(sides_buf);
+            print_chromo(population[fittest_i]);
+        }
     }
 
-    if (solution_found) {
-        printf("\nSOLVED\n");
-    }
-
-    // Draw last result
     copy_all_sides(sides_buf, sides);
     for (int i = 0; i < CHROMO_LENGTH; i++)
         apply_action(population[fittest_i][i], sides_buf);
     printf("\n Generation %i fittest (%i):\n", generation_count, fitnesses[fittest_i]);
     draw_cube(sides_buf);
+    print_chromo(population[fittest_i]);
+
+
+    if (solution_found) {
+        printf("\nSOLVED\n");
+    }
 
     // Draw superfit result
     copy_all_sides(sides_buf, sides);
