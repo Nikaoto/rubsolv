@@ -19,5 +19,11 @@ make
 
 Tested with clang-1000.11.45.5 and gcc 6.3.0, compiles and runs without problems.
 
+## TODO list
+Things to try in the future to see which yields better results:
+
+- Instead of rewarding based on color, reward based on landing 1 of the 26 pieces at the right spot
+- Use a neural net
+
 ## License
 MIT
