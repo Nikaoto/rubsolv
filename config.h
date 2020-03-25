@@ -1,3 +1,6 @@
+#ifndef CONFIG_H_
+#define CONFIG_H_
+
 // Change these only if using different cube size
 #define CUBE_SIZE         3
 #define CELL_COUNT        CUBE_SIZE * CUBE_SIZE
@@ -28,3 +31,5 @@
 #define CROSSOVER_RATE    0.64f
 #define REWARD_ACTION     +
 #define REWARD_MULT       1
+
+#endif /* CONFIG_H_ */
